@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Face Analyzer</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style/style.css') }}">
+</head>
+<body>
+
+  <h2>Upload an Image for Face Analysis</h2>
+
+  <input type="file" id="imageInput" accept="image/*">
+  <br>
+  <button onclick="uploadImage()">Predict</button>
+  <button onclick="removeImage()">Remove</button>
+  <div id="loader" class="loader" style="display: none;"></div>
+  <br>
+  <img id="preview" src="#" style="display:none;" alt="Image Preview">
+
+  <div id="result" style="display:none;"></div>
+
+  <script>
+    let selectedImage = null;
+
+    document.getElementById("imageInput").addEventListener("change", function (event) {
+      selectedImage = event.target.files[0];
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const preview = document.getElementById("preview");
+        preview.src = e.target.result;
+        preview.style.display = "block";
+      };
+      reader.readAsDataURL(selectedImage);
+    });
+
+    function uploadImage() {
+      if (!selectedImage) {
+        alert("Please select an image first.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("image", selectedImage);
+
+      // 👉 Show the loading spinner before sending request
+      document.getElementById("loader").style.display = "block";
+      document.getElementById("result").style.display = "none";
+
+      fetch("/predict", {
+        method: "POST",
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        // 👉 Hide the loading spinner when done
+        document.getElementById("loader").style.display = "none";
+
+        document.getElementById("result").innerHTML = `
+          <h3>Prediction Results</h3>
+          <p><strong>Age:</strong> ${data.Age}</p>
+          <p><strong>Gender:</strong> ${data.Gender}</p>
+          <p><strong>Ethnicity:</strong> ${data.Ethnicity}</p>
+        `;
+        document.getElementById("result").style.display = "block";
+      })
+      .catch(error => {
+        console.error("Error:", error);
+        document.getElementById("loader").style.display = "none";
+        alert("Something went wrong!");
+      });
+    }
+    function removeImage() {
+      selectedImage = null;
+
+      document.getElementById("imageInput").value = "";
+      document.getElementById("preview").style.display = "none";
+      document.getElementById("preview").src = "#";
+
+      document.getElementById("result").style.display = "none";
+      document.getElementById("result").innerHTML = "";
+
+      document.getElementById("loader").style.display = "none";
+    }
+  </script>
+</body>
+</html>
